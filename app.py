@@ -3,6 +3,7 @@ import os
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+import json
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
@@ -67,11 +68,39 @@ class App(QMainWindow):
         self.index = 0
         self.image_load(self.files[self.index])
     
+    def readjson(self,jsonfile):
+        with open(jsonfile) as jf:
+            return json.load(jf)
     def image_load(self,file):
         self.label.clear()
-        self.image = QPixmap(file).scaled(1300,1000,Qt.KeepAspectRatio,Qt.SmoothTransformation)
-        self.label.setPixmap(self.image)
+        image = QPixmap(file).scaled(self.label.width(),self.label.height(),Qt.KeepAspectRatio,Qt.SmoothTransformation)
+        #self.label.resize(self.image.width(),self.image.height())
+        #self.label.setPixmap(self.image)
         self.label.show()
+        jsonfile=file.replace(file.split(".")[-1],"json")
+        try:
+            data = self.readjson(jsonfile)
+            height=self.label.height()/data['imageHeight']
+            width=self.label.width()/data['imageWidth']
+            self.pen =QPainter(image)
+            for labeling in data['shapes']:
+                point_list = labeling['points']
+                points=[]
+                
+                for point in point_list:
+                    points.append(QPoint(point[0]*width,point[1]*height))
+                    self.draw_point(points)
+                self.pen.end
+            
+        except:
+            pass
+    def draw_point(self,points):
+        polygon = QPolygon(points)
+        self.pen.setPen(QPen(Qt.red,3))
+        #self.pen.setBrush(QBrush(QColor('#D187EF')))
+        self.pen.drawPolygon(polygon)
+        self.label.setPixmap(image)
+
         
     def next_image(self):
         self.index +=1
