@@ -15,9 +15,13 @@ class App(QMainWindow):
         self.setupUI()
         self.color_list={}
         self.index = 0
+        self.save_image_index = self.index
         self.files = []
         self.bCtrl = False
+        self.bSpace = False
         self.zoom = 1
+        self.y_last_time_move = 0
+        self.x_last_time_move = 0
         self.att_data=self.readjson(os.path.join(os.getcwd(),"setting.json"))
         
 
@@ -31,6 +35,9 @@ class App(QMainWindow):
         self.Mainlayout = QVBoxLayout(widget)
         self.canvas_layout = QHBoxLayout()
         self.scroll = QScrollArea()
+        self.scroll_ybar = self.scroll.verticalScrollBar()
+        self.scroll_xbar = self.scroll.horizontalScrollBar()
+        self.scroll.installEventFilter(self)
         self.label = QLabel(self)
         self.label.setFixedSize(1500,1100)
         self.label.setAlignment(Qt.AlignCenter)
@@ -50,14 +57,21 @@ class App(QMainWindow):
         self.setCentralWidget(widget)
     def make_dock(self):
         self.result_dock=QDockWidget("Result_list",self)
-        self.result_dock.setFixedSize(200,250)
+        #self.result_dock.setFixedSize(200,250)
+        self.result_dock.resize(200,250)
         self.addDockWidget(Qt.RightDockWidgetArea,self.result_dock)
         self.label_dock=QDockWidget("label_list",self)
-        self.label_dock.setFixedSize(200,250)
+        #self.label_dock.setFixedSize(200,250)
+        self.label_dock.resize(200,250)
         self.att_dock = QDockWidget("Attribute",self)
-        self.att_dock.setFixedSize(200,250)
+        #self.att_dock.setFixedSize(200,250)
+        self.att_dock.resize(200,250)
+        self.filename_dock = QDockWidget("File_name",self)
+        #self.att_dock.setFixedSize(200,250)
+        self.filename_dock.resize(200,250)
         self.addDockWidget(Qt.RightDockWidgetArea,self.label_dock)
         self.addDockWidget(Qt.RightDockWidgetArea,self.att_dock)
+        self.addDockWidget(Qt.TopDockWidgetArea,self.filename_dock)
 
     def re_make_dock(self):
         self.result_dock=QDockWidget("Result_list",self)
@@ -71,10 +85,10 @@ class App(QMainWindow):
 
     def make_toolbar(self):
         self.open_file_button = QAction(self.style().standardIcon(QStyle.SP_FileIcon),"Opne_File",self)
-        self.open_file_button.setShortcut('Ctrl+O')
+        self.open_file_button.setShortcut('Shift+O')
         self.open_file_button.triggered.connect(self.open_file)
         self.open_folder_button = QAction(self.style().standardIcon(QStyle.SP_DirOpenIcon),"Opne_Folder",self)
-        self.open_folder_button.setShortcut('Ctrl+P')
+        self.open_folder_button.setShortcut('Shift+U')
         self.open_folder_button.triggered.connect(self.open_folder)
         self.next_button = QAction(self.style().standardIcon(QStyle.SP_ArrowForward),"Next_Image",self)
         self.next_button.setShortcut('Ctrl+D')
@@ -115,7 +129,10 @@ class App(QMainWindow):
     def image_load(self,file):
         #self.label.clear()
         #self.label.resize(1700,1000)
-        self.img_raw= cv2.imread(file)
+        self.filename_show(file)
+        img_array = np.fromfile(file,np.uint8)
+        self.img_raw = cv2.imdecode(img_array,cv2.IMREAD_COLOR)
+        #self.img_raw= cv2.imread(file,1)
         self.img = cv2.cvtColor(self.img_raw,cv2.COLOR_BGR2RGB)
         self.img2 = self.img.copy()
         self.label.show()
@@ -145,6 +162,7 @@ class App(QMainWindow):
         except Exception as e:
             print(e)
         try:
+            self.save_index=0
             self.label_dock_list(label_list)
             self.img = QImage(self.img.data,self.img.shape[1],self.img.shape[0],self.img.strides[0],QImage.Format_RGB888)
             self.image = QPixmap.fromImage(self.img).scaled(self.label.width(),self.label.height(),Qt.KeepAspectRatio,Qt.SmoothTransformation)
@@ -156,10 +174,20 @@ class App(QMainWindow):
             print(e)
 
     def draw_point(self,label,points):
-        R = float(self.color_list[label][0])
-        G = float(self.color_list[label][1])
-        B = float(self.color_list[label][2])
-        points=np.array(points,np.int32)
+        try:
+            if label in list(self.att_data['color_list'].keys()):
+                print("yes")
+                G = self.att_data['color_list'][label][0]
+                R = self.att_data['color_list'][label][1]
+                B = self.att_data['color_list'][label][2]
+            else:
+                print("no")
+                R = float(self.color_list[label][0])
+                G = float(self.color_list[label][1])
+                B = float(self.color_list[label][2])
+            points=np.array(points,np.int32)
+        except:
+            print("color error")
         self.copy_img = self.img2.copy()
         self.img = cv2.polylines(self.img,[points],True,(G,R,B),1)
         self.mask = self.copy_img*0
@@ -169,25 +197,24 @@ class App(QMainWindow):
 
     def draw_mask(self):
         self.label_index = self.label_list.currentRow()
+        self.save_index = self.label_index
         try:
-            self.att=self.att_list[self.label_index]
+            for at in self.att_data['attribute']:
+                try:
+                    if self.att_list[self.label_index][at]:
+                        pass
+                except:
+                    self.att_list[self.label_index][at] = ""
+            self.att= self.att_list[self.label_index]
         except:
-            self.att_list[self.label_index]={"color":"","materior":"","pattern":""}
-            self.color_lb.setText("")
-            self.materior_lb.setText("")
-            self.pattern_lb.setText("")
-        try:
-            self.color_lb.setText(self.att["color"])
-        except:
-            self.color_lb.setText("")
-        try:
-            self.materior_lb.setText(self.att["materior"])
-        except:
-            self.materior_lb.setText("")
-        try:
-            self.pattern_lb.setText(self.att["pattern"])
-        except:
-            self.pattern_lb.setText("")
+            for at in self.att_data['attribute']:
+                self.att_list[self.label_index][at]=""
+                globals()["{}_lb".format(at)].setText("")
+        for at in self.att_data['attribute']:
+            try:
+                globals()["{}_lb".format(at)].setText(self.att[at])
+            except:
+                globals()["{}_lb".format(at)].setText("")
         self.mask_img= self.draw_img[self.label_index]
         self.mask_img=cv2.addWeighted(self.img2,0.6,self.mask_img,0.4,0)
         self.mask_img = QImage(self.mask_img.data,self.mask_img.shape[1],self.mask_img.shape[0],self.mask_img.strides[0],QImage.Format_RGB888)
@@ -195,6 +222,7 @@ class App(QMainWindow):
         self.current_image = self.mask_img.copy()
         self.label.setPixmap(self.mask_image)
         self.data['shapes'][self.label_index]['flags'] = self.att_list[self.label_index]
+        
     
     def open_raw(self):
         self.current_image = self.img.copy()
@@ -208,11 +236,10 @@ class App(QMainWindow):
             self.index -=1
         else:
             try:
-                
                 self.image_load(self.files[self.index])
+                self.save_image_index = self.index
             except:
                 pass
-
 
     def back_image(self):
         self.data_save(self.data)
@@ -222,9 +249,17 @@ class App(QMainWindow):
         else:
             try:
                 self.image_load(self.files[self.index])
+                self.save_image_index = self.index
             except:
                 pass
-    
+    def click_image_list(self):
+        self.save_image_index = self.index
+        self.image_index=self.file_list.currentRow()
+        file = self.files[self.image_index]
+        self.image_load(file)
+        self.index = self.image_index
+        
+
     def data_save(self,data):
         with open(self.jsonfile,"w") as jf:
             json.dump(data,jf,indent=2)
@@ -233,9 +268,15 @@ class App(QMainWindow):
         self.file_list = QListWidget()
         for file in file_list:
             self.file_list.addItem(file)
+        self.file_list.itemClicked.connect(self.click_image_list)
         self.result_dock.setWidget(self.file_list)
         self.result_dock.setFloating(False)
-
+    
+    def filename_show(self,file):
+        self.file_dock = QLabel()
+        self.file_dock.setText(file)
+        self.filename_dock.setWidget(self.file_dock)
+   
     def label_dock_list(self,label_list):
         self.label_list = QListWidget()
         for label in label_list:
@@ -247,37 +288,53 @@ class App(QMainWindow):
     def att_dock_set(self):
         self.att_widget = QWidget(self)
         self.att_dock_layout = QGridLayout(self)
-        self.color_cb = QComboBox()
-        self.color_cb.activated[str].connect(self.color_change)
-        self.color_lb = QLabel()
-        self.materior_cb = QComboBox()
-        self.materior_cb.activated[str].connect(self.materior_change)
-        self.materior_lb = QLabel()
-        self.pattern_cb = QComboBox()
-        self.pattern_cb.activated[str].connect(self.pattern_change)
-        self.pattern_lb = QLabel()
-        self.att_dock_layout.addWidget(self.color_lb,0,0)
-        self.att_dock_layout.addWidget(self.materior_lb,1,0)
-        self.att_dock_layout.addWidget(self.pattern_lb,2,0)
-        self.att_dock_layout.addWidget(self.color_cb,0,1)
-        self.att_dock_layout.addWidget(self.materior_cb,1,1)
-        self.att_dock_layout.addWidget(self.pattern_cb,2,1)
-        self.color_cb.addItems(self.att_data["attribute"]["color"])
-        self.materior_cb.addItems(self.att_data["attribute"]["materior"])
-        self.pattern_cb.addItems(self.att_data["attribute"]["pattern"])
+
+        for i,att in enumerate(self.att_data['attribute']):
+            globals()["{}_cb".format(att)]=QComboBox()
+            globals()["{}_lb".format(att)]=QLabel()
+            globals()["{}_cb".format(att)].activated[str].connect(self.att_change)
+            self.att_dock_layout.addWidget(globals()["{}_lb".format(att)],i,0)
+            self.att_dock_layout.addWidget(globals()["{}_cb".format(att)],i,1)
+            globals()["{}_cb".format(att)].addItems(self.att_data["attribute"][att])
+        # self.color_cb = QComboBox()
+        # self.color_cb.activated[str].connect(self.color_change)
+        # self.color_lb = QLabel()
+        # self.materior_cb = QComboBox()
+        # self.materior_cb.activated[str].connect(self.materior_change)
+        # self.materior_lb = QLabel()
+        # self.pattern_cb = QComboBox()
+        # self.pattern_cb.activated[str].connect(self.pattern_change)
+        # self.pattern_lb = QLabel()
+
+        # self.att_dock_layout.addWidget(self.color_lb,0,0)
+        # self.att_dock_layout.addWidget(self.materior_lb,1,0)
+        # self.att_dock_layout.addWidget(self.pattern_lb,2,0)
+        # self.att_dock_layout.addWidget(self.color_cb,0,1)
+        # self.att_dock_layout.addWidget(self.materior_cb,1,1)
+        # self.att_dock_layout.addWidget(self.pattern_cb,2,1)
+        # self.color_cb.addItems(self.att_data["attribute"]["color"])
+        # self.materior_cb.addItems(self.att_data["attribute"]["materior"])
+        # self.pattern_cb.addItems(self.att_data["attribute"]["pattern"])
         self.att_widget.setLayout(self.att_dock_layout)
         self.att_dock.setWidget(self.att_widget)
         self.att_dock.setFloating(False)
 
-    def color_change(self):
-        self.color_lb.setText(self.color_cb.currentText())
-        self.att_list[self.label_index]['color'] = self.color_cb.currentText()
-    def materior_change(self):
-        self.materior_lb.setText(self.materior_cb.currentText())
-        self.att_list[self.label_index]['materior'] = self.materior_cb.currentText()
-    def pattern_change(self):
-        self.pattern_lb.setText(self.pattern_cb.currentText())
-        self.att_list[self.label_index]['pattern'] = self.pattern_cb.currentText()
+    def att_change(self):
+        for att in self.att_data['attribute']:
+            if self.label_index:
+                if globals()["{}_cb".format(att)].currentText() != globals()["{}_lb".format(att)].text():
+                    globals()["{}_lb".format(att)].setText(globals()["{}_cb".format(att)].currentText())
+                    self.att_list[self.label_index][att] = globals()["{}_cb".format(att)].currentText()
+
+    # def color_change(self):
+    #     self.color_lb.setText(self.color_cb.currentText())
+    #     self.att_list[self.label_index]['color'] = self.color_cb.currentText()
+    # def materior_change(self):
+    #     self.materior_lb.setText(self.materior_cb.currentText())
+    #     self.att_list[self.label_index]['materior'] = self.materior_cb.currentText()
+    # def pattern_change(self):
+    #     self.pattern_lb.setText(self.pattern_cb.currentText())
+    #     self.att_list[self.label_index]['pattern'] = self.pattern_cb.currentText()
 
 
     def open_folder(self):
@@ -285,10 +342,12 @@ class App(QMainWindow):
         self.files = []
         if select_folder:
             file_list = os.listdir(select_folder)
-            for file in file_list:
-                format = file.split(".")[-1].lower()
-                if format =="jpg" or format =="jpeg" or format =="png":
-                    self.files.append(os.path.join(select_folder,file))
+            for root,_,files in os.walk(select_folder):
+                if files:
+                    for file in files:
+                        format = file.split(".")[-1].lower()
+                        if format =="jpg" or format =="jpeg" or format =="png":
+                            self.files.append(os.path.join(root,file))
             self.result_dock_list(self.files)
             self.image_load(self.files[self.index])
             self.att_dock_set()
@@ -328,13 +387,52 @@ class App(QMainWindow):
     def keyPressEvent(self, event):
         if event.key()==16777249:
             self.bCtrl = True
-            #print(f"{event.key()}:press")
+        if event.key() == 16777220:
+            try:
+                if self.save_index != self.label_list.currentRow():
+                    self.draw_mask()            
+                elif self.save_image_index != self.file_list.currentRow():
+                    self.click_image_list()
+            except:
+                pass
+        if event.key() ==32:
+            self.bSpace = True
+
 
     def keyReleaseEvent(self, event):
         if event.key()==16777249:
             self.bCtrl = False
-            #print(f"{event.key()}:Release")
+        if event.key() ==32:
+            self.bSpace = False
+        
+    def mousePressEvent(self,e):
+        print('BUTTON PRESS')
+        print(e.pos())
+        #self.mouseButtonKind(e.buttons())
 
+    def mouseReleaseEvent(self,e):
+        print("BUTTON RELEASE")
+        
+        #self.mouseButtonKind(e.buttons())
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.MouseMove and self.bSpace:
+            #print(event.pos().y())
+            
+            if self.y_last_time_move == 0:
+                self.y_last_time_move = event.pos().y()
+            if self.x_last_time_move ==0:
+                self.x_last_time_move = event.pos().x()
+            y_distance = self.y_last_time_move - event.pos().y()
+            x_distance = self.x_last_time_move - event.pos().x()
+            self.scroll_ybar.setValue(self.scroll_ybar.value() + y_distance)
+            self.scroll_xbar.setValue(self.scroll_xbar.value() + x_distance)
+            self.y_last_time_move = event.pos().y()
+            self.x_last_time_move = event.pos().x()
+            
+        elif event.type() == QEvent.MouseButtonRelease:
+            self.y_last_time_move = 0
+            self.x_last_time_move = 0
+        return QWidget.eventFilter(self, source, event)
     # def processmultikeys(self,keyspressed):
     #     print(keyspressed)
         
