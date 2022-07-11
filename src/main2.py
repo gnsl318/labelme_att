@@ -169,8 +169,6 @@ class App(QMainWindow):
             self.current_image = self.img.copy()
             self.label.resize(self.image.width(),self.image.height())
             self.label.setPixmap(self.image)
-            for at in self.att_data['attribute']:
-                globals()["{}_lb".format(at)].setText("")
             #self.draw_mask()
         except Exception as e:
             print(e)
@@ -201,22 +199,16 @@ class App(QMainWindow):
         self.label_index = self.label_list.currentRow()
         self.save_index = self.label_index
         try:
-            for at in self.att_data['attribute']:
-                try:
-                    if self.att_list[self.label_index][at]:
-                        pass
-                except:
-                    self.att_list[self.label_index][at] = ""
-            self.att= self.att_list[self.label_index]
+            self.att=self.att_list[self.label_index]
         except:
-            for at in self.att_data['attribute']:
-                self.att_list[self.label_index][at]=""
-                globals()["{}_lb".format(at)].setText("")
-        for at in self.att_data['attribute']:
+            for att in self.att_data['attribute']:
+                self.att_list[self.label_index][att]=""
+                globals()["{}_lb".format(att)].setText("")
+        for att in self.att_data['attribute']:
             try:
-                globals()["{}_lb".format(at)].setText(self.att[at])
+                globals()["{}_lb".format(att)].setText(self.att[att])
             except:
-                globals()["{}_lb".format(at)].setText("")
+                globals()["{}_lb".format(att)].setText("")
         self.mask_img= self.draw_img[self.label_index]
         self.mask_img=cv2.addWeighted(self.img2,0.6,self.mask_img,0.4,0)
         self.mask_img = QImage(self.mask_img.data,self.mask_img.shape[1],self.mask_img.shape[0],self.mask_img.strides[0],QImage.Format_RGB888)
@@ -321,13 +313,10 @@ class App(QMainWindow):
         self.att_dock.setWidget(self.att_widget)
         self.att_dock.setFloating(False)
 
-    def att_change(self):
-        for att in self.att_data['attribute']:
-            if self.label_index>=0:
-                if globals()["{}_cb".format(att)].currentText() != globals()["{}_lb".format(att)].text():
-                    globals()["{}_lb".format(att)].setText(globals()["{}_cb".format(att)].currentText())
-                    self.att_list[self.label_index][att] = globals()["{}_cb".format(att)].currentText()
-
+    def att_change(self,att):
+        print(att)
+        globals()["{}_lb".format(att)].setText(globals()["{}_cb".format(att)].currentText())
+        self.att_list[self.label_index][att] = globals()["{}_cb".format(att)].currentText()
 
     # def color_change(self):
     #     self.color_lb.setText(self.color_cb.currentText())
@@ -409,14 +398,12 @@ class App(QMainWindow):
             self.bSpace = False
         
     def mousePressEvent(self,e):
-        pass
-        #print('BUTTON PRESS')
-        #print(e.pos())
+        print('BUTTON PRESS')
+        print(e.pos())
         #self.mouseButtonKind(e.buttons())
 
     def mouseReleaseEvent(self,e):
-        pass
-        #print("BUTTON RELEASE")
+        print("BUTTON RELEASE")
         
         #self.mouseButtonKind(e.buttons())
     def eventFilter(self, source, event):
