@@ -325,9 +325,11 @@ class App(QMainWindow):
         for att in self.att_data['attribute']:
             if self.label_index>=0:
                 if globals()["{}_cb".format(att)].currentText() != globals()["{}_lb".format(att)].text():
-                    globals()["{}_lb".format(att)].setText(globals()["{}_cb".format(att)].currentText())
-                    self.att_list[self.label_index][att] = globals()["{}_cb".format(att)].currentText()
-
+                    try:
+                        globals()["{}_lb".format(att)].setText(globals()["{}_cb".format(att)].currentText())
+                        self.att_list[self.label_index][att] = globals()["{}_cb".format(att)].currentText()
+                    except:
+                        pass
 
     # def color_change(self):
     #     self.color_lb.setText(self.color_cb.currentText())
