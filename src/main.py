@@ -209,9 +209,12 @@ class App(QMainWindow):
                     self.att_list[self.label_index][at] = ""
             self.att= self.att_list[self.label_index]
         except:
-            for at in self.att_data['attribute']:
-                self.att_list[self.label_index][at]=""
-                globals()["{}_lb".format(at)].setText("")
+            try:
+                for at in self.att_data['attribute']:
+                    self.att_list[self.label_index][at]=""
+                    globals()["{}_lb".format(at)].setText("")
+            except Exception as e:
+                print(e)
         for at in self.att_data['attribute']:
             try:
                 globals()["{}_lb".format(at)].setText(self.att[at])
