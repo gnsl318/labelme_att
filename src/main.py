@@ -146,10 +146,15 @@ class App(QMainWindow):
             width=self.img.shape[1]/self.data['imageWidth']
             self.label_count = 0
             for labeling in self.data['shapes']:
+                if str(type(labeling['flags'])) == "dict":
+                    self.att_list.append(labeling['flags'])
+                else:
+                    continue
                 point_list = labeling['points']
                 label = labeling['label']
                 label_list.append(label)
-                self.att_list.append(labeling['flags'])
+
+                
                 try:
                     if self.color_list[label]:
                         pass
@@ -202,23 +207,19 @@ class App(QMainWindow):
         try:
             for at in self.att_data['attribute']:
                 try:
-                    print("A")
                     if self.att_list[self.label_index][at]:
-                        print("B")
                         globals()["{}_lb".format(at)].setText(self.att_list[self.label_index][at])
                 except:
-                    print("C")
                     self.att_list[self.label_index][at] = ""
+                    globals()["{}_lb".format(at)].setText("")
             self.att= self.att_list[self.label_index]
         except:
             try:
-                print("D")
+
                 for at in self.att_data['attribute']:
-                    print(f"E{at}")
                     self.att_list[self.label_index][at]=""
                     globals()["{}_lb".format(at)].setText("")
             except Exception as e:
-                print("2")
                 print(e)
         # for at in self.att_data['attribute']:
         #     try:
@@ -232,6 +233,7 @@ class App(QMainWindow):
         self.current_image = self.mask_img.copy()
         self.label.setPixmap(self.mask_image)
         self.data['shapes'][self.label_index]['flags'] = self.att_list[self.label_index]
+        self.data_save(self.data)
         
     
     def open_raw(self):
@@ -331,9 +333,11 @@ class App(QMainWindow):
 
     def att_change(self):
         for att in self.att_data['attribute']:
+            att = str(att)
             try:
                 if self.label_index>=0:
-                    if globals()["{}_cb".format(att)].currentText() != globals()["{}_lb".format(att)].text():
+                    if self.att_list[self.label_index][att] != globals()["{}_lb".format(att)].text():
+                    #if globals()["{}_cb".format(att)].currentText() != globals()["{}_lb".format(att)].text():
                         try:
                             globals()["{}_lb".format(att)].setText(globals()["{}_cb".format(att)].currentText())
                             self.att_list[self.label_index][att] = globals()["{}_cb".format(att)].currentText()
