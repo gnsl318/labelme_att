@@ -169,8 +169,9 @@ class App(QMainWindow):
             self.current_image = self.img.copy()
             self.label.resize(self.image.width(),self.image.height())
             self.label.setPixmap(self.image)
-            for at in self.att_data['attribute']:
-                globals()["{}_lb".format(at)].setText("")
+            # for at in self.att_data['attribute']:
+            #     print(at)
+            #     globals()["{}_lb".format(at)].setText("")
             #self.draw_mask()
         except Exception as e:
             print(e)
@@ -178,12 +179,10 @@ class App(QMainWindow):
     def draw_point(self,label,points):
         try:
             if label in list(self.att_data['color_list'].keys()):
-                print("yes")
                 G = self.att_data['color_list'][label][0]
                 R = self.att_data['color_list'][label][1]
                 B = self.att_data['color_list'][label][2]
             else:
-                print("no")
                 R = float(self.color_list[label][0])
                 G = float(self.color_list[label][1])
                 B = float(self.color_list[label][2])
@@ -200,11 +199,12 @@ class App(QMainWindow):
     def draw_mask(self):
         self.label_index = self.label_list.currentRow()
         self.save_index = self.label_index
+        self.att_dock_set()
         try:
             for at in self.att_data['attribute']:
                 try:
                     if self.att_list[self.label_index][at]:
-                        pass
+                        globals()["{}_lb".format(at)].setText(self.att_list[self.label_index][at])
                 except:
                     self.att_list[self.label_index][at] = ""
             self.att= self.att_list[self.label_index]
@@ -214,12 +214,13 @@ class App(QMainWindow):
                     self.att_list[self.label_index][at]=""
                     globals()["{}_lb".format(at)].setText("")
             except Exception as e:
+                print("2")
                 print(e)
-        for at in self.att_data['attribute']:
-            try:
-                globals()["{}_lb".format(at)].setText(self.att[at])
-            except:
-                globals()["{}_lb".format(at)].setText("")
+        # for at in self.att_data['attribute']:
+        #     try:
+        #         globals()["{}_lb".format(at)].setText(self.att[at])
+        #     except:
+        #         globals()["{}_lb".format(at)].setText("")
         self.mask_img= self.draw_img[self.label_index]
         self.mask_img=cv2.addWeighted(self.img2,0.6,self.mask_img,0.4,0)
         self.mask_img = QImage(self.mask_img.data,self.mask_img.shape[1],self.mask_img.shape[0],self.mask_img.strides[0],QImage.Format_RGB888)
@@ -326,13 +327,16 @@ class App(QMainWindow):
 
     def att_change(self):
         for att in self.att_data['attribute']:
-            if self.label_index>=0:
-                if globals()["{}_cb".format(att)].currentText() != globals()["{}_lb".format(att)].text():
-                    try:
-                        globals()["{}_lb".format(att)].setText(globals()["{}_cb".format(att)].currentText())
-                        self.att_list[self.label_index][att] = globals()["{}_cb".format(att)].currentText()
-                    except:
-                        pass
+            try:
+                if self.label_index>=0:
+                    if globals()["{}_cb".format(att)].currentText() != globals()["{}_lb".format(att)].text():
+                        try:
+                            globals()["{}_lb".format(att)].setText(globals()["{}_cb".format(att)].currentText())
+                            self.att_list[self.label_index][att] = globals()["{}_cb".format(att)].currentText()
+                        except:
+                            pass
+            except:
+                pass
 
     # def color_change(self):
     #     self.color_lb.setText(self.color_cb.currentText())
