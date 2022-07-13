@@ -199,18 +199,22 @@ class App(QMainWindow):
     def draw_mask(self):
         self.label_index = self.label_list.currentRow()
         self.save_index = self.label_index
-        self.att_dock_set()
         try:
             for at in self.att_data['attribute']:
                 try:
+                    print("A")
                     if self.att_list[self.label_index][at]:
+                        print("B")
                         globals()["{}_lb".format(at)].setText(self.att_list[self.label_index][at])
                 except:
+                    print("C")
                     self.att_list[self.label_index][at] = ""
             self.att= self.att_list[self.label_index]
         except:
             try:
+                print("D")
                 for at in self.att_data['attribute']:
+                    print(f"E{at}")
                     self.att_list[self.label_index][at]=""
                     globals()["{}_lb".format(at)].setText("")
             except Exception as e:
