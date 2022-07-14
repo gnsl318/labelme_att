@@ -146,7 +146,7 @@ class App(QMainWindow):
             width=self.img.shape[1]/self.data['imageWidth']
             self.label_count = 0
             for labeling in self.data['shapes']:
-                if str(type(labeling['flags'])) == "dict":
+                if str(type(labeling['flags'])) == "<class 'dict'>":
                     self.att_list.append(labeling['flags'])
                 else:
                     continue
@@ -202,32 +202,29 @@ class App(QMainWindow):
         self.label_count +=1
 
     def draw_mask(self):
+        self.att_dock_set()
         self.label_index = self.label_list.currentRow()
         self.save_index = self.label_index
-        try:
-            for at in self.att_data['attribute']:
-                try:
-                    if self.att_list[self.label_index][at]:
-                        globals()["{}_lb".format(at)].setText(self.att_list[self.label_index][at])
-                except:
-                    self.att_list[self.label_index][at] = ""
-                    globals()["{}_lb".format(at)].setText("")
-            self.att= self.att_list[self.label_index]
-        except:
+        #try:
+        for at in self.att_data['attribute']:
             try:
-
-                for at in self.att_data['attribute']:
-                    self.att_list[self.label_index][at]=""
-                    globals()["{}_lb".format(at)].setText("")
-            except Exception as e:
-                print(e)
-        # for at in self.att_data['attribute']:
+                if self.att_list[self.label_index][at]:
+                    globals()["{}_lb".format(at)].setText(self.att_list[self.label_index][at])
+            except:
+                self.att_list[self.label_index][at] = ""
+                globals()["{}_lb".format(at)].setText("")
+            globals()["{}_save".format(at)] = globals()["{}_cb".format(at)].currentText()
+        self.att= self.att_list[self.label_index]
+        # except:
         #     try:
-        #         globals()["{}_lb".format(at)].setText(self.att[at])
-        #     except:
-        #         globals()["{}_lb".format(at)].setText("")
+        #         for at in self.att_data['attribute']:
+        #             self.att_list[self.label_index][at]=""
+        #             globals()["{}_lb".format(at)].setText("")
+        #     except Exception as e:
+        #         print(e)
+
         self.mask_img= self.draw_img[self.label_index]
-        self.mask_img=cv2.addWeighted(self.img2,0.6,self.mask_img,0.4,0)
+        self.mask_img=cv2.addWeighted(self.img2,0.6,self.mask_img,0.3,0)
         self.mask_img = QImage(self.mask_img.data,self.mask_img.shape[1],self.mask_img.shape[0],self.mask_img.strides[0],QImage.Format_RGB888)
         self.mask_image = QPixmap.fromImage(self.mask_img).scaled(self.label.width(),self.label.height(),Qt.KeepAspectRatio,Qt.SmoothTransformation)
         self.current_image = self.mask_img.copy()
@@ -333,18 +330,20 @@ class App(QMainWindow):
 
     def att_change(self):
         for att in self.att_data['attribute']:
-            att = str(att)
-            try:
-                if self.label_index>=0:
-                    if self.att_list[self.label_index][att] != globals()["{}_lb".format(att)].text():
-                    #if globals()["{}_cb".format(att)].currentText() != globals()["{}_lb".format(att)].text():
-                        try:
-                            globals()["{}_lb".format(att)].setText(globals()["{}_cb".format(att)].currentText())
-                            self.att_list[self.label_index][att] = globals()["{}_cb".format(att)].currentText()
-                        except:
-                            pass
-            except:
-                pass
+            if globals()["{}_save".format(att)] != globals()["{}_cb".format(att)].currentText():
+                try:
+                    if self.label_index>=0:
+                        if globals()["{}_cb".format(att)].currentText() != globals()["{}_lb".format(att)].text():
+                        #if globals()["{}_cb".format(att)].currentText() != globals()["{}_lb".format(att)].text():
+                            try:
+                                globals()["{}_lb".format(att)].setText(globals()["{}_cb".format(att)].currentText())
+                                self.att_list[self.label_index][att] = globals()["{}_cb".format(att)].currentText()
+                                globals()["{}_save".format(att)] = globals()["{}_cb".format(att)].currentText()
+                            except:
+                                pass
+                except:
+                    pass
+
 
     # def color_change(self):
     #     self.color_lb.setText(self.color_cb.currentText())
