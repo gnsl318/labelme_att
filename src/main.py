@@ -149,7 +149,8 @@ class App(QMainWindow):
                 if str(type(labeling['flags'])) == "<class 'dict'>":
                     self.att_list.append(labeling['flags'])
                 else:
-                    continue
+                    labeling['flags']={}
+                    self.att_list.append(labeling['flags'])
                 point_list = labeling['points']
                 label = labeling['label']
                 label_list.append(label)
@@ -165,7 +166,7 @@ class App(QMainWindow):
                     points.append([point[0]*width,point[1]*height])
                 self.draw_point(label,points)
         except Exception as e:
-            print(e)
+            pass
         try:
             self.save_index=0
             self.label_dock_list(label_list)
@@ -179,7 +180,13 @@ class App(QMainWindow):
             #     globals()["{}_lb".format(at)].setText("")
             #self.draw_mask()
         except Exception as e:
-            print(e)
+            self.save_index=0
+            #self.label_dock_list(label_list)
+            self.img = QImage(self.img.data,self.img.shape[1],self.img.shape[0],self.img.strides[0],QImage.Format_RGB888)
+            self.image = QPixmap.fromImage(self.img).scaled(self.label.width(),self.label.height(),Qt.KeepAspectRatio,Qt.SmoothTransformation)
+            self.current_image = self.img.copy()
+            self.label.resize(self.image.width(),self.image.height())
+            self.label.setPixmap(self.image)
 
     def draw_point(self,label,points):
         try:
