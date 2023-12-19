@@ -6,6 +6,7 @@ from PyQt5.QtCore import *
 import json
 import cv2
 import numpy as np
+from PIL import Image , ImageOps
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
@@ -126,14 +127,34 @@ class App(QMainWindow):
     def readjson(self,jsonfile):
         with open(jsonfile) as jf:
             return json.load(jf)
+
+        #print(rotated_point)
     def image_load(self,file):
         #self.label.clear()
         #self.label.resize(1700,1000)
         self.filename_show(file)
+        print(file)
+        try:
+            img_data = Image.open(file)
+            exif_data = img_data._getexif()
+            rotate = exif_data[0x0112]
+            print(rotate)
+        except Exception as e:
+            rotate = 1
+            pass
+
         img_array = np.fromfile(file,np.uint8)
         self.img_raw = cv2.imdecode(img_array,cv2.IMREAD_COLOR)
+
+        #img_copy = self.img_raw.copy()
+        #self.img_raw = np.rot90(self.img_raw,k=2)
+        #self.img_raw = self.img_raw.rotate(180,expand=True)
+        #self.img_raw = np.flip(self.img_raw)
+        #self.img_raw = ImageOps.exif_transpose(self.img_raw)
+
         #self.img_raw= cv2.imread(file,1)
         self.img = cv2.cvtColor(self.img_raw,cv2.COLOR_BGR2RGB)
+
         self.img2 = self.img.copy()
         self.label.show()
         self.jsonfile=file.replace(file.split(".")[-1],"json")
@@ -142,8 +163,13 @@ class App(QMainWindow):
         self.att_list=[]
         try:
             self.data = self.readjson(self.jsonfile)
-            height=self.img.shape[0]/self.data['imageHeight']
-            width=self.img.shape[1]/self.data['imageWidth']
+            if rotate==5 or rotate ==1 or rotate ==3:
+                height = self.img.shape[0] / self.data['imageWidth']
+                width = self.img.shape[1] / self.data['imageHeight']
+            else:
+                height=self.img.shape[0]/self.data['imageHeight']
+                width=self.img.shape[1]/self.data['imageWidth']
+
             self.label_count = 0
             for labeling in self.data['shapes']:
                 if str(type(labeling['flags'])) == "<class 'dict'>":
@@ -154,8 +180,6 @@ class App(QMainWindow):
                 point_list = labeling['points']
                 label = labeling['label']
                 label_list.append(label)
-
-                
                 try:
                     if self.color_list[label]:
                         pass
@@ -180,6 +204,7 @@ class App(QMainWindow):
             #     globals()["{}_lb".format(at)].setText("")
             #self.draw_mask()
         except Exception as e:
+            print(e)
             self.save_index=0
             #self.label_dock_list(label_list)
             self.img = QImage(self.img.data,self.img.shape[1],self.img.shape[0],self.img.strides[0],QImage.Format_RGB888)
@@ -387,7 +412,7 @@ class App(QMainWindow):
     #         print("RIGHT")
     
     # def mousePressEvent(self,e):
-    #     print('BUTTON PRESS')
+    #     print('BUTTON PRESS')att_data
     #     self.mouseButtonKind(e.buttons())
 
     # def mouseReleaseEvent(self,e):
@@ -403,12 +428,13 @@ class App(QMainWindow):
             self.zoom -= 0.01 
         try:
             if self.current_image and self.bCtrl:
-                self.label.setFixedSize(1500*self.zoom,1100*self.zoom)
+                self.label.setFixedSize(int(1500*self.zoom),int(1100*self.zoom))
                 self.label.setAlignment(Qt.AlignCenter)
                 #self.label.resize(1700*self.zoom,1000*self.zoom)
                 self.current_zoom_image = QPixmap.fromImage(self.current_image).scaled(self.label.width(),self.label.height(),Qt.KeepAspectRatio,Qt.SmoothTransformation)
                 self.label.setPixmap(self.current_zoom_image)
-        except:
+        except Exception as e:
+            print(e)
             pass
     def keyPressEvent(self, event):
         if event.key()==16777249:
