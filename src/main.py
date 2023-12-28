@@ -92,10 +92,10 @@ class App(QMainWindow):
         self.open_folder_button.setShortcut('Shift+U')
         self.open_folder_button.triggered.connect(self.open_folder)
         self.next_button = QAction(self.style().standardIcon(QStyle.SP_ArrowForward),"Next_Image",self)
-        self.next_button.setShortcut('Ctrl+D')
+        self.next_button.setShortcut('D')
         self.next_button.triggered.connect(self.next_image)
         self.back_button = QAction(self.style().standardIcon(QStyle.SP_ArrowBack),"Back_Image",self)
-        self.back_button.setShortcut('Ctrl+A')
+        self.back_button.setShortcut('A')
         self.back_button.triggered.connect(self.back_image)
         self.open_file_list_button = QAction(self.style().standardIcon(QStyle.SP_ToolBarHorizontalExtensionButton),"Opne_File_List",self)
         self.open_file_list_button.setShortcut('Ctrl+L')
@@ -163,9 +163,13 @@ class App(QMainWindow):
         self.att_list=[]
         try:
             self.data = self.readjson(self.jsonfile)
-            if rotate==5 or rotate ==1 or rotate ==3:
-                height = self.img.shape[0] / self.data['imageWidth']
-                width = self.img.shape[1] / self.data['imageHeight']
+            if rotate==5 or rotate ==3 or rotate ==1:
+                if self.data['imageWidth']>self.data['imageHeight']:
+                    height = self.img.shape[0] / self.data['imageHeight']
+                    width = self.img.shape[1] / self.data['imageWidth']
+                else:
+                    height = self.img.shape[0] / self.data['imageWidth']
+                    width = self.img.shape[1] / self.data['imageHeight']
             else:
                 height=self.img.shape[0]/self.data['imageHeight']
                 width=self.img.shape[1]/self.data['imageWidth']
